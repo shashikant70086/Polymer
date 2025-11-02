@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Polymer Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    },
+                    animation: {
+                        fadeIn: 'fadeIn 0.5s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .three-d-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            max-height: 50vh;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: #000000; 
+        }
+        .three-d-container canvas {
+            display: block;
+        }
+        .nav-button.active {
+            background-color: #00FF00; 
+            color: #000000;
+            font-weight: 700;
+        }
+        .sub-nav-button.active {
+            border-color: #00FF00;
+            color: #00FF00;
+            font-weight: 700;
+        }
+        .chem-reaction {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            background-color: #0d0d0d;
+            border: 1px solid #00FF00;
+            color: #00FF00;
+        }
+        .chem-reaction .plus {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #888888;
+        }
+        .chem-reaction .arrow {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00FF00;
+            text-align: center;
+            min-width: 150px;
+        }
+        .chem-formula {
+            text-align: center;
+        }
+        .applications-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .applications-list li {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .applications-list li:hover {
+            transform: translateX(5px);
+            color: #32ff32;
+        }
+        .applications-list li::before {
+            content: counter(list-item);
+            counter-increment: list-item;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 50%;
+            background-color: #003300;
+            color: #00FF00;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #00FF00;
+        }
+        .applications-list li:hover::before {
+            transform: scale(1.1);
+            background-color: #00FF00;
+            color: #000000;
+        }
+        .content-section {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes blink-caret {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .blinking-cursor {
+            color: #00FF00;
+            animation: blink-caret 0.75s step-end infinite;
+            font-weight: bold;
+        }
+        .info-panel {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            max-width: 250px;
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 1px solid #00FF00;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            color: #00FF00;
+            z-index: 100;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .info-panel.hidden {
+            display: none;
+        }
+        .info-panel-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: #00FF00;
+            font-size: 1.5rem;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .info-panel-close:hover {
+            color: #FFFFFF;
+        }
+        .info-panel-title {
+            color: #32ff32;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .info-panel-content {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body class="bg-black text-green-400 transition-colors duration-300">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <nav class="w-full md:w-64 bg-black md:fixed md:h-full shadow-lg z-10 border-r border-green-700 transition-colors duration-300">
+            <div class="p-5 border-b border-green-700">
+                <h1 class="text-xl font-bold text-green-400">Polymer Explorer</h1>
+                <p class="text-sm text-green-600">Chemistry Assignment</p>
+            </div>
+
+            <ul id="main-nav" class="py-4">
+                <li><button class="nav-button active w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="intro">Introduction</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="pvc">1. PVC</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="pet">2. PET</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="pmma">3. PMMA</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="nylon">4. Nylon 6,6</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="buna-s">5. Buna-S</button></li>
+                <li><button class="nav-button w-full text-left px-5 py-3 text-green-400 hover:bg-gray-900 hover:text-green-300 transition-all duration-200" data-target="buna-n">6. Buna-N</button></li>
+            </ul>
+        </nav>
+
+        <main class="flex-1 md:ml-64 p-6 md:p-10">
+            <section id="content-intro" class="content-section max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">Synthesis and Applications of Common Polymers</h2>
+                <p class="text-lg text-green-400 mb-8">
+                    Welcome to the interactive guide to common polymers. This application provides a detailed overview of the synthesis, structure, and applications of six key polymers from your report. Use the navigation on the left to select a polymer and explore its properties.
+                </p>
+                <div class="bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Polymer Synthesis Methods Overview</h3>
+                    <p class="text-green-400 mb-6">
+                        The polymers in this report are synthesized via two primary methods: addition polymerization (where monomers add to each other, breaking double bonds) and condensation polymerization (where monomers join by releasing a small molecule, like water). This chart shows the breakdown.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="polymerTypeChart"></canvas>
+                    </div>
+                </div>
+            </section>
+            <section id="content-pvc" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">1. PVC (Polyvinyl Chloride)</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Polyvinyl Chloride (PVC) is a versatile and widely used synthetic thermoplastic polymer. It is a very durable and cost-effective material. By using plasticizers, it can be made in rigid forms (uPVC) for pipes or flexible forms for items like clothing and insulation.
+                </p>
+                
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pvc-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pvc-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pvc-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pvc-apps">Applications</button>
+                </div>
+
+                <div id="pvc-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>Vinyl chloride (CH<sub>2</sub>=CHCl)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Polymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(CH<sub>2</sub>=CHCl)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Peroxide Catalyst)</span>
+                        </div>
+                        <div class="chem-formula">[-CH<sub>2</sub>-CHCl-]<sub>n</sub></div>
+                    </div>
+                </div>
+
+                <div id="pvc-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Vinyl Chloride</h3>
+                    <p class="text-green-400 mb-4">
+                        This is a 3D model of the <strong>Vinyl Chloride (CH<sub>2</sub>=CHCl)</strong> monomer, the building block of PVC. Click an atom to identify it. Model uses standard CPK coloring (C=Grey, H=White, Cl=Green).
+                    </p>
+                    <div id="3d-container-pvc" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pvc-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Free-Radical Addition</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        PVC is produced by the <strong>addition polymerization</strong> of the vinyl chloride monomer. This reaction proceeds via a free-radical mechanism, typically in a suspension of the monomer in water.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Initiation</strong><br>A free-radical initiator (like benzoyl peroxide) is heated. It splits apart to form two highly reactive free radicals (R&bull;).</li>
+                        <li><strong>Step 2: Propagation</strong><br>This radical (R&bull;) attacks the C=C double bond of a vinyl chloride monomer. The bond breaks, the radical attaches to one carbon, and the other carbon becomes the new radical. This new, larger radical then attacks another monomer, and this process repeats, rapidly growing the polymer chain.</li>
+                        <li><strong>Step 3: Termination</strong><br>The chain growth stops when two growing radical chains find each other and combine (combination) or exchange an atom (disproportionation) to form stable, non-reactive polymer chains.</li>
+                    </ol>
+                </div>
+
+                <div id="pvc-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Pipes and Fittings (uPVC):</strong> The rigid, unplasticized form (uPVC) is extensively used for water pipes, drainage, and sewage systems.</li>
+                        <li><strong>Building and Construction:</strong> uPVC is also used for window frames, door frames, siding (cladding), and roofing sheets. Flexible PVC is used for flooring.</li>
+                        <li><strong>Electrical Insulation:</strong> Plasticized (flexible) PVC is an excellent electrical insulator and is used as the primary insulating sheath on electrical cables.</li>
+                        <li><strong>Medical Products:</strong> Its non-toxic and flexible nature makes it ideal for sterile, single-use medical items like blood bags, IV tubing, and oxygen masks.</li>
+                        <li><strong>Household & Consumer Goods:</strong> Used to make raincoats, shower curtains, synthetic leather (rexine) for upholstery, garden hoses, and inflatable products.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section id="content-pet" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">2. PET (Polyethylene Terephthalate)</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Polyethylene Terephthalate (PET) is a common and strong thermoplastic polymer belonging to the polyester family. It is known for its excellent clarity, high strength, light weight, and good barrier properties against moisture and gas.
+                </p>
+
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pet-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pet-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pet-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pet-apps">Applications</button>
+                </div>
+
+                <div id="pet-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>Ethylene glycol (HO-CH<sub>2</sub>-CH<sub>2</sub>-OH)</li>
+                        <li>Terephthalic acid (HOOC-C<sub>6</sub>H<sub>4</sub>-COOH)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Polymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(HO-CH<sub>2</sub>-CH<sub>2</sub>-OH)</div>
+                        <div class="plus">+</div>
+                        <div class="chem-formula">n(HOOC-C<sub>6</sub>H<sub>4</sub>-COOH)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Catalyst, Heat, Vacuum)</span>
+                        </div>
+                        <div class="chem-formula">[-O-CH<sub>2</sub>-CH<sub>2</sub>-O-CO-C<sub>6</sub>H<sub>4</sub>-CO-]<sub>n</sub> + 2n(H<sub>2</sub>O)</div>
+                    </div>
+                </div>
+
+                <div id="pet-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: PET Monomers</h3>
+                    <p class="text-green-400 mb-4">
+                        This model shows the two PET monomers: <strong>Ethylene Glycol</strong> (left) and <strong>Terephthalic Acid</strong> (right). They join via condensation. CPK Colors: C=Grey, H=White, O=Red.
+                    </p>
+                    <div id="3d-container-pet" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="pet-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Condensation Polymerization</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        PET is formed by <strong>condensation polymerization</strong> (also called step-growth). This process involves two main stages and releases a small molecule (water) as a byproduct.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Esterification</strong><br>Ethylene glycol (an alcohol) and terephthalic acid (a carboxylic acid) are heated together with a catalyst. The acid group (-COOH) of one monomer reacts with the alcohol group (-OH) of the other to form an ester bond, releasing one molecule of water. This creates a "dimer" or "trimer" (small chains).</li>
+                        <li><strong>Step 2: Polycondensation</strong><br>This mixture of small chains is then heated further (to ~280°C) under a high vacuum. The vacuum is critical: it removes the water byproduct, which (by Le Chatelier's principle) drives the reaction forward. The small chains link together, releasing more water, until very long, high-molecular-weight PET chains are formed.</li>
+                    </ol>
+                </div>
+
+                <div id="pet-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Beverage Bottles:</strong> Its most common use is for making clear, lightweight, and shatter-resistant plastic bottles for water, soft drinks, and juices.</li>
+                        <li><strong>Textile Fibers:</strong> Widely used as a synthetic fiber known as "polyester" (e.g., Terylene, Dacron). It is used for clothing, carpets, and fabrics.</li>
+                        <li><strong>Food Packaging:</strong> Used to make clear, rigid containers (clamshells) for salads and flexible films (like Mylar) for food packaging.</li>
+                        <li><strong>Industrial Strapping:</strong> Its high tensile strength makes it a strong, lightweight alternative to steel for heavy-duty packing and bailing straps.</li>
+                        <li><strong>Other Uses:</strong> Also used in photographic films, magnetic recording tape, and as a substrate for solar cells.</li>
+                    </ol>
+                </div>
+            </section>
+            
+            <section id="content-pmma" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">3. PMMA (Polymethyl Methacrylate)</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Polymethyl Methacrylate (PMMA) is a hard, rigid, and transparent thermoplastic. It is often used as a lightweight and shatter-resistant alternative to glass, offering superior optical clarity. It is commonly known by trade names like Plexiglas, Lucite, and Perspex.
+                </p>
+
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pmma-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pmma-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pmma-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="pmma-apps">Applications</button>
+                </div>
+
+                <div id="pmma-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>Methyl methacrylate (CH<sub>2</sub>=C(CH<sub>3</sub>)COOCH<sub>3</sub>)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Polymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(CH<sub>2</sub>=C(CH<sub>3</sub>)COOCH<sub>3</sub>)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Free-Radical Initiator)</span>
+                        </div>
+                        <div class="chem-formula">[-CH<sub>2</sub>-C(CH<sub>3</sub>)(COOCH<sub>3</sub>)-]<sub>n</sub></div>
+                    </div>
+                </div>
+                
+                <div id="pmma-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Methyl Methacrylate</h3>
+                    <p class="text-green-400 mb-4">
+                        This is a 3D model of the <strong>Methyl Methacrylate</strong> monomer. Click an atom to identify it. CPK Colors: C=Grey, H=White, O=Red.
+                    </p>
+                    <div id="3d-container-pmma" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pmma-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Free-Radical Addition</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        PMMA is produced by the <strong>addition polymerization</strong> of methyl methacrylate, using a free-radical mechanism very similar to that of PVC.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Initiation</strong><br>An initiator (like AIBN or benzoyl peroxide) is heated to decompose and form two free radicals (R&bull;).</li>
+                        <li><strong>Step 2: Propagation</strong><br>The radical (R&bull;) attacks the C=C double bond of a methyl methacrylate monomer. The chain grows as this new radical "eats" thousands of monomers in a rapid chain reaction. The bulky methyl (-CH<sub>3</sub>) and ester (-COOCH<sub>3</sub>) groups prevent the chain from packing tightly, which contributes to its transparency.</li>
+                        <li><strong>Step 3: Termination</strong><br>The reaction stops when two growing radical chains meet and either combine (combination) or exchange a hydrogen atom (disproportionation) to create stable final polymer chains.</li>
+                    </ol>
+                </div>
+
+                <div id="pmma-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Glass Substitute (Glazing):</strong> Used as a lightweight, shatter-resistant substitute for glass in windows, skylights, aquariums, and aircraft canpies.</li>
+                        <li><strong>Signs and Displays:</strong> Its excellent optical clarity and weather resistance make it perfect for illuminated signs, retail displays, and brochure holders.</li>
+                        <li><strong>Medical and Dental:</strong> Used for making rigid intraocular lenses (for cataract surgery), dentures, and bone cement in orthopedic surgery.</li>
+                        <li><strong>Automotive and Electronics:</strong> Used for taillight covers, instrument panels, and as the light-guiding plate for LCD/LED screens.</li>
+                        <li><strong>Other Uses:</strong> Also used for cosmetic surgery (as a filler), protective shields, furniture, and fiber optics.</li>
+                    </ol>
+                </div>
+            </section>
+            
+            <section id="content-nylon" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">4. Nylon 6,6</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Nylon 6,6 is a synthetic polyamide, one of the most common types of nylon. It is a strong, durable, and elastic material with excellent abrasion resistance and a high melting point, highly valued for its use in fibers and engineering plastics.
+                </p>
+
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="nylon-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="nylon-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="nylon-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="nylon-apps">Applications</button>
+                </div>
+
+                <div id="nylon-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>Hexamethylenediamine (H<sub>2</sub>N-(CH<sub>2</sub>)<sub>6</sub>-NH<sub>2</sub>)</li>
+                        <li>Adipic acid (HOOC-(CH<sub>2</sub>)<sub>4</sub>-COOH)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Polymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(H<sub>2</sub>N-(CH<sub>2</sub>)<sub>6</sub>-NH<sub>2</sub>)</div>
+                        <div class="plus">+</div>
+                        <div class="chem-formula">n(HOOC-(CH<sub>2</sub>)<sub>4</sub>-COOH)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Heat, Pressure)</span>
+                        </div>
+                        <div class="chem-formula">[-NH-(CH<sub>2</sub>)<sub>6</sub>-NH-CO-(CH<sub>2</sub>)<sub>4</sub>-CO-]<sub>n</sub> + 2n(H<sub>2</sub>O)</div>
+                    </div>
+                </div>
+                
+                <div id="nylon-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Nylon 6,6 Monomers</h3>
+                    <p class="text-green-400 mb-4">
+                        This model shows <strong>Hexamethylenediamine</strong> (left) and <strong>Adipic Acid</strong> (right). They join to form Nylon 6,6. CPK Colors: C=Grey, H=White, O=Red, N=Blue.
+                    </p>
+                    <div id="3d-container-nylon" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="nylon-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Condensation Polymerization</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        Nylon 6,6 is formed by <strong>condensation polymerization</strong>. The "6,6" in its name comes from the fact that both monomers—hexamethylenediamine and adipic acid—contain 6 carbon atoms each.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Salt Formation</strong><br>First, the acid (adipic acid) and the base (hexamethylenediamine) are mixed in a solvent. They neutralize each other to form a precise 1:1 salt, known as "Nylon 6,6 salt". This step is crucial for ensuring the monomers are in the correct ratio.</li>
+                        <li><strong>Step 2: Polycondensation</strong><br>This salt is then heated in an autoclave (a pressurized reactor) with water. Under high temperature (over 250°C) and pressure, the salt's carboxylate (-COO<sup>-</sup>) and ammonium (-NH<sub>3</sub><sup>+</sup>) groups react to form an <strong>amide bond</strong>, releasing a molecule of water.</li>
+                        <li><strong>Step 3: Polymerization & Water Removal</strong><br>The pressure is slowly released, which boils off the water. Removing the water drives the reaction to completion, linking the monomers into long, strong polyamide chains. The molten polymer is then extruded.</li>
+                    </ol>
+                </div>
+
+                <div id="nylon-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Textile Fibers:</strong> Used to make strong, elastic, and durable fibers for clothing (stockings, lingerie, sportswear), carpets, and upholstery.</li>
+                        <li><strong>Industrial Uses:</strong> Its high strength-to-weight ratio and abrasion resistance make it ideal for ropes, tire cords, parachutes, conveyor belts, and airbags.</li>
+                        <li><strong>Engineering Plastics:</strong> Used as a replacement for metal in mechanical parts like gears, bearings, bushings, and zip ties.</li>
+                        <li><strong>Consumer Goods:</strong> Used in toothbrush bristles, fishing lines, guitar strings, and kitchen utensils (like spatulas).</li>
+                        <li><strong>Automotive:</strong> Used for under-the-hood parts like engine covers, radiator end tanks, and electrical connectors.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section id="content-buna-s" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">5. Buna-S (Styrene-Butadiene Rubber - SBR)</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Buna-S, also known as Styrene-Butadiene Rubber (SBR), is a synthetic rubber copolymer. It is the most widely produced synthetic rubber and is primarily used for manufacturing vehicle tires, as it has better abrasion resistance and aging properties than natural rubber.
+                </p>
+
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-s-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-s-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-s-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-s-apps">Applications</button>
+                </div>
+
+                <div id="buna-s-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>1,3-Butadiene (CH<sub>2</sub>=CH-CH=CH<sub>2</sub>)</li>
+                        <li>Styrene (C<sub>6</sub>H<sub>5</sub>-CH=CH<sub>2</sub>)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Copolymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(CH<sub>2</sub>=CH-CH=CH<sub>2</sub>)</div>
+                        <div class="plus">+</div>
+                        <div class="chem-formula">m(C<sub>6</sub>H<sub>5</sub>-CH=CH<sub>2</sub>)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Copolymerization)</span>
+                        </div>
+                        <div class="chem-formula">[(-CH<sub>2</sub>-CH=CH-CH<sub>2</sub>-)<sub>x</sub> - (-CH(C<sub>6</sub>H<sub>5</sub>)-CH<sub>2</sub>-)<sub>y</sub>]<sub>n</sub></div>
+                    </div>
+                </div>
+                
+                <div id="buna-s-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Buna-S Monomers</h3>
+                    <p class="text-green-400 mb-4">
+                        This model shows <strong>1,3-Butadiene</strong> (left) and <strong>Styrene</strong> (right), which randomly copolymerize to form Buna-S. CPK Colors: C=Grey, H=White.
+                    </p>
+                    <div id="3d-container-buna-s" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="buna-s-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Emulsion Copolymerization</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        Buna-S (SBR) is a <strong>copolymer</strong>, meaning it's made from two different monomers. It is produced by <strong>free-radical addition polymerization</strong> using an emulsion process.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Emulsification</strong><br>The two monomers (1,3-Butadiene and Styrene, typically in a 3:1 ratio) are insoluble in water. They are mixed with soapy water to form an <strong>emulsion</strong>, where tiny droplets of the monomers (micelles) are suspended.</li>
+                        <li><strong>Step 2: Initiation</strong><br>A water-soluble initiator (like potassium persulfate) is added. It creates free radicals in the water phase, which then enter the micelles.</li>
+                        <li><strong>Step 3: Propagation (Random)</strong><br>Inside the micelle, the radical starts a polymer chain. Since both monomers are present, the chain grows by <strong>randomly</strong> adding either a butadiene or a styrene. This random arrangement is key to its rubbery properties.</li>
+                        <li><strong>Step 4: Termination</strong><br>The reaction is stopped (often with a "shortstop" agent) when the desired length is reached. The resulting milky-white latex is then processed to get solid SBR.</li>
+                    </ol>
+                </div>
+
+                <div id="buna-s-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Vehicle Tires:</strong> This is the most significant application. It is blended with natural rubber to produce tires, especially for the treads.</li>
+                        <li><strong>Footwear:</strong> Widely used to make the soles and heels of shoes, providing good durability and slip resistance.</li>
+                        <li><strong>Industrial Hoses and Belts:</strong> Used in manufacturing conveyor belts, V-belts, and various industrial hoses.</li>
+                        <li><strong>Mechanical Goods:</strong> Used to make gaskets, seals, and other molded rubber goods that do not require high oil resistance.</li>
+                        <li><strong>Other Uses:</strong> Also used in cable insulation, as a binder in latex paints, and for coating paper.</li>
+                    </ol>
+                </div>
+            </section>
+            
+
+            <section id="content-buna-n" class="content-section hidden max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-green-400 mb-4">6. Buna-N (Nitrile-Butadiene Rubber - NBR)</h2>
+                <p class="text-lg text-green-400 mb-6">
+                    Buna-N, also known as Nitrile-Butadiene Rubber (NBR) or simply Nitrile Rubber, is a synthetic rubber copolymer. It is highly valued for its excellent resistance to oil, fuel, and other chemicals, which is superior to most other elastomers.
+                </p>
+
+                <div class="sub-nav flex flex-wrap border-b border-green-700 mb-6">
+                    <button class="sub-nav-button active py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-n-details">Monomers & Reaction</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-n-3d">Interactive 3D Model</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-n-synthesis">Synthesis Details</button>
+                    <button class="sub-nav-button py-3 px-4 border-b-2 border-transparent text-green-600 hover:text-green-300 transition-colors duration-200" data-target="buna-n-apps">Applications</button>
+                </div>
+
+                <div id="buna-n-details" class="sub-content bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Monomer Units</h3>
+                    <ul class="list-disc list-inside text-green-400 mb-6">
+                        <li>1,3-Butadiene (CH<sub>2</sub>=CH-CH=CH<sub>2</sub>)</li>
+                        <li>Acrylonitrile (CH<sub>2</sub>=CH-C&equiv;N)</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Structure (Copolymerization)</h3>
+                    <div class="chem-reaction">
+                        <div class="chem-formula">n(CH<sub>2</sub>=CH-CH=CH<sub>2</sub>)</div>
+                        <div class="plus">+</div>
+                        <div class="chem-formula">m(CH<sub>2</sub>=CH-CN)</div>
+                        <div class="arrow">
+                            &rarr;<br>
+                            <span class="text-sm font-sans">(Copolymerization)</span>
+                        </div>
+                        <div class="chem-formula">[(-CH<sub>2</sub>-CH=CH-CH<sub>2</sub>-)<sub>x</sub> - (-CH(CN)-CH<sub>2</sub>-)<sub>y</sub>]<sub>n</sub></div>
+                    </div>
+                </div>
+                
+                <div id="buna-n-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Buna-N Monomers</h3>
+                    <p class="text-green-400 mb-4">
+                        This model shows <strong>1,3-Butadiene</strong> (left) and <strong>Acrylonitrile</strong> (right), which randomly copolymerize. CPK Colors: C=Grey, H=White, N=Blue.
+                    </p>
+                    <div id="3d-container-buna-n" class="three-d-container">
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="buna-n-synthesis" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Synthesis Details: Emulsion Copolymerization</h3>
+                    <p class="text-green-400 leading-relaxed mb-4">
+                        Buna-N (Nitrile Rubber) is also a <strong>copolymer</strong> made by <strong>emulsion polymerization</strong>, just like Buna-S. The key difference is the monomer partner.
+                    </p>
+                    <ol class="list-decimal list-inside text-green-400 leading-relaxed space-y-3">
+                        <li><strong>Step 1: Emulsification</strong><br>1,3-Butadiene and <strong>Acrylonitrile</strong> monomers are emulsified in soapy water, forming micelles.</li>
+                        <li><strong>Step 2: Initiation</strong><br>A water-soluble initiator creates free radicals that start the reaction within the micelles.</li>
+                        <li><strong>Step 3: Propagation (Random)</strong><br>The polymer chain grows by randomly adding either butadiene (providing flexibility) or acrylonitrile (providing polarity and oil resistance). The ratio is critical: a higher percentage of acrylonitrile results in much better resistance to oil and fuel, but makes the rubber less flexible at low temperatures.</li>
+                        <li><strong>Step 4: Termination</strong><br>The reaction is stopped, and the Buna-N latex is coagulated, washed, and dried to produce the final synthetic rubber.</li>
+                    </ol>
+                </div>
+
+                <div id="buna-n-apps" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
+                    <h3 class="text-xl font-semibold text-green-300 mb-4">Common Applications</h3>
+                    <ol class="applications-list">
+                        <li><strong>Seals and Gaskets:</strong> Its primary feature is high resistance to oil and fuel. It is extensively used to make O-rings, seals, and gaskets.</li>
+                        <li><strong>Fuel Hoses:</strong> Used to make fuel and oil handling hoses for cars, aircraft, and industrial equipment.</li>
+                        <li><strong>Disposable Gloves:</strong> Widely used to make nitrile gloves, a common latex-free alternative for medical, laboratory, and industrial use.</li>
+                        <li><strong>Industrial Belting:</strong> Used in automotive transmission belts and other industrial belts that are exposed to oils and high temperatures.</li>
+                        <li><strong>Other Uses:</strong> Used for printer's rollers (due to oil resistance), cable jacketing, and as a component in adhesives and sealants.</li>
+                    </ol>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const mainNav = document.getElementById('main-nav');
+            const contentSections = document.querySelectorAll('.content-section');
+            const navButtons = document.querySelectorAll('.nav-button');
+            const allSubNavs = document.querySelectorAll('.sub-nav');
+
+            function typeWriter(element, text, speed = 30) {
+                if (element.typingTimeout) {
+                    clearTimeout(element.typingTimeout);
+                }
+                let i = 0;
+                element.innerHTML = '';
+                const textSpan = document.createElement('span');
+                const cursorSpan = document.createElement('span');
+                cursorSpan.innerHTML = '█';
+                cursorSpan.className = 'blinking-cursor';
+                element.appendChild(textSpan);
+                element.appendChild(cursorSpan);
+
+                function type() {
+                    if (i < text.length) {
+                        textSpan.innerHTML += text.charAt(i);
+                        i++;
+                        element.typingTimeout = setTimeout(type, speed);
+                    } else {
+                        cursorSpan.remove(); 
+                    }
+                }
+                type();
+            }
+
+            function wrapText(text, maxLen) {
+                const words = text.split(' ');
+                let lines = [];
+                let currentLine = '';
+                words.forEach(word => {
+                    if ((currentLine + word).length > maxLen) {
+                        lines.push(currentLine.trim());
+                        currentLine = word + ' ';
+                    } else {
+                        currentLine += word + ' ';
+                    }
+                });
+                lines.push(currentLine.trim());
+                return lines;
+            }
+
+            let polymerChart;
+            function createChart() {
+                const chartCtx = document.getElementById('polymerTypeChart').getContext('2d');
+                polymerChart = new Chart(chartCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Addition Polymerization', 'Condensation Polymerization'],
+                        datasets: [{
+                            label: 'Polymer Synthesis Types',
+                            data: [4, 2],
+                            backgroundColor: [
+                                '#00FF00', 
+                                '#f59e0b'  
+                            ],
+                            borderColor: [
+                                '#000000',
+                                '#000000'
+                            ],
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#00FF00',
+                                    font: {
+                                        size: 14,
+                                        family: 'Courier New, Courier, monospace'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                titleFont: {
+                                    family: 'Courier New, Courier, monospace'
+                                },
+                                bodyFont: {
+                                    family: 'Courier New, Courier, monospace'
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label = wrapText(label, 16).join('\n');
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += ': ' + context.parsed;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            createChart();
+
+            let threeScene = null;
+            let currentPolymerGroup = null;
+            let animationFrameId = null;
+            let raycaster, mouse;
+
+            const cpkColors = {
+                C:  0x282828, // Dark Grey
+                H:  0xFFFFFF, // White
+                O:  0xFF0000, // Red
+                N:  0x0000FF, // Blue
+                Cl: 0x00FF00  // Green
+            };
+
+            function init3D() {
+                if (threeScene) return;
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                camera.position.z = 15;
+                
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setClearColor(0x000000, 0);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+                scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(5, 10, 7.5);
+                scene.add(directionalLight);
+                
+                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePannable = false;
+                controls.minDistance = 5;
+                controls.maxDistance = 30;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 1.0;
+
+                currentPolymerGroup = new THREE.Group();
+                scene.add(currentPolymerGroup);
+
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+                
+                renderer.domElement.addEventListener('click', onCanvasClick, false);
+
+                threeScene = { scene, camera, renderer, controls, currentPolymerGroup, lastHighlight: null };
+
+                function animate() {
+                    animationFrameId = requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+                animate();
+            }
+            
+            function onCanvasClick(event) {
+                const canvas = event.target;
+                const rect = canvas.getBoundingClientRect();
+                
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, threeScene.camera);
+                
+                const intersects = raycaster.intersectObjects(currentPolymerGroup.children, true);
+                
+                const infoPanel = canvas.closest('.three-d-container').querySelector('.info-panel');
+                
+                if (threeScene.lastHighlight) {
+                    threeScene.lastHighlight.material.emissive.setHex(threeScene.lastHighlight.currentHex);
+                    threeScene.lastHighlight = null;
+                }
+
+                if (intersects.length > 0) {
+                    const intersectedObject = intersects[0].object;
+                    const userData = intersectedObject.userData;
+                    
+                    if (userData && userData.type === 'atom') {
+                        infoPanel.querySelector('.info-panel-title').textContent = `ATOM_ID:: ${userData.atomName}`;
+                        infoPanel.querySelector('.info-panel-content').textContent = `Part of: ${userData.monomerName}`;
+                        infoPanel.classList.remove('hidden');
+                        
+                        threeScene.lastHighlight = intersectedObject;
+                        threeScene.lastHighlight.currentHex = intersectedObject.material.emissive.getHex();
+                        intersectedObject.material.emissive.setHex(0xAAAAAA);
+                        
+                    } else {
+                        infoPanel.classList.add('hidden');
+                    }
+                } else {
+                    infoPanel.classList.add('hidden');
+                }
+            }
+
+            function clear3DScene() {
+                if (!threeScene || !currentPolymerGroup) return;
+                while (currentPolymerGroup.children.length > 0) {
+                    const obj = currentPolymerGroup.children[0];
+                    currentPolymerGroup.remove(obj);
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                }
+                threeScene.lastHighlight = null;
+            }
+            
+            function createAtom(color, posVec, userData, radius = 0.5) {
+                const geometry = new THREE.SphereGeometry(radius, 16, 16);
+                const material = new THREE.MeshPhongMaterial({ color: color });
+                const atom = new THREE.Mesh(geometry, material);
+                atom.position.copy(posVec);
+                atom.userData = userData;
+                return atom;
+            }
+
+            function createBond(v1, v2) {
+                const path = new THREE.LineCurve3(v1, v2);
+                const geometry = new THREE.TubeGeometry(path, 1, 0.1, 8, false);
+                const material = new THREE.MeshPhongMaterial({ color: 0x555555 }); // Grey bonds
+                const bond = new THREE.Mesh(geometry, material);
+                bond.userData = { type: 'bond' };
+                return bond;
+            }
+
+            function buildPVC(group) {
+                const data = { type: 'atom', monomerName: 'Vinyl Chloride' };
+                const c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
+                const c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
+                const h1 = createAtom(cpkColors.H, new THREE.Vector3(-0.5, 1, 0), { ...data, atomName: 'Hydrogen' });
+                const h2 = createAtom(cpkColors.H, new THREE.Vector3(-0.5, -1, 0), { ...data, atomName: 'Hydrogen' });
+                const h3 = createAtom(cpkColors.H, new THREE.Vector3(2, 1, 0), { ...data, atomName: 'Hydrogen' });
+                const cl = createAtom(cpkColors.Cl, new THREE.Vector3(2, -1, 0), { ...data, atomName: 'Chlorine' }, 0.7);
+                
+                group.add(c1, c2, h1, h2, h3, cl);
+                group.add(createBond(c1.position, c2.position)); // Double bond
+                group.add(createBond(new THREE.Vector3(0.1, 0.1, 0), new THREE.Vector3(1.4, 0.1, 0)));
+                group.add(createBond(c1.position, h1.position));
+                group.add(createBond(c1.position, h2.position));
+                group.add(createBond(c2.position, h3.position));
+                group.add(createBond(c2.position, cl.position));
+            }
+
+            function buildPET(group) {
+                const data1 = { type: 'atom', monomerName: 'Ethylene Glycol' };
+                const data2 = { type: 'atom', monomerName: 'Terephthalic Acid' };
+
+                // Ethylene Glycol (left)
+                const eg_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const eg_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const eg_o1 = createAtom(cpkColors.O, new THREE.Vector3(-7, 1.5, 0), { ...data1, atomName: 'Oxygen' }, 0.6);
+                const eg_o2 = createAtom(cpkColors.O, new THREE.Vector3(-3.5, 1.5, 0), { ...data1, atomName: 'Oxygen' }, 0.6);
+                group.add(eg_c1, eg_c2, eg_o1, eg_o2);
+                group.add(createBond(eg_c1.position, eg_c2.position));
+                group.add(createBond(eg_c1.position, eg_o1.position));
+                group.add(createBond(eg_c2.position, eg_o2.position));
+
+                // Terephthalic Acid (right) - simplified benzene ring
+                const ta_c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                const ta_c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 1, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                const ta_c3 = createAtom(cpkColors.C, new THREE.Vector3(3, 0, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                const ta_c4 = createAtom(cpkColors.C, new THREE.Vector3(3, -1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                const ta_c5 = createAtom(cpkColors.C, new THREE.Vector3(1.5, -2.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                const ta_c6 = createAtom(cpkColors.C, new THREE.Vector3(0, -1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                group.add(ta_c1, ta_c2, ta_c3, ta_c4, ta_c5, ta_c6);
+                group.add(createBond(ta_c1.position, ta_c2.position));
+                group.add(createBond(ta_c2.position, ta_c3.position));
+                group.add(createBond(ta_c3.position, ta_c4.position));
+                group.add(createBond(ta_c4.position, ta_c5.position));
+                group.add(createBond(ta_c5.position, ta_c6.position));
+                group.add(createBond(ta_c6.position, ta_c1.position));
+                // Carboxyl groups
+                const ta_c7 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 1, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
+                const ta_c8 = createAtom(cpkColors.C, new THREE.Vector3(4.5, -2.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
+                const ta_o1 = createAtom(cpkColors.O, new THREE.Vector3(-1.5, 2, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const ta_o2 = createAtom(cpkColors.O, new THREE.Vector3(-2.5, 0, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const ta_o3 = createAtom(cpkColors.O, new THREE.Vector3(4.5, -3.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const ta_o4 = createAtom(cpkColors.O, new THREE.Vector3(5.5, -1.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                group.add(ta_c7, ta_c8, ta_o1, ta_o2, ta_o3, ta_o4);
+                group.add(createBond(ta_c1.position, ta_c7.position));
+                group.add(createBond(ta_c5.position, ta_c8.position));
+                group.add(createBond(ta_c7.position, ta_o1.position));
+                group.add(createBond(ta_c7.position, ta_o2.position));
+                group.add(createBond(ta_c8.position, ta_o3.position));
+                group.add(createBond(ta_c8.position, ta_o4.position));
+            }
+
+            function buildPMMA(group) {
+                const data = { type: 'atom', monomerName: 'Methyl Methacrylate' };
+                const c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
+                const c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
+                const c3 = createAtom(cpkColors.C, new THREE.Vector3(1.5, -1.5, 0), { ...data, atomName: 'Carbon (Methyl)' }, 0.6);
+                const c4 = createAtom(cpkColors.C, new THREE.Vector3(3, 0.5, 0), { ...data, atomName: 'Carbon (Ester)' }, 0.6);
+                const c5 = createAtom(cpkColors.C, new THREE.Vector3(5, 0.5, 0), { ...data, atomName: 'Carbon (Ester Methyl)' }, 0.6);
+                const o1 = createAtom(cpkColors.O, new THREE.Vector3(3, 1.5, 0), { ...data, atomName: 'Oxygen (Ester)' }, 0.6);
+                const o2 = createAtom(cpkColors.O, new THREE.Vector3(4, -0.5, 0), { ...data, atomName: 'Oxygen (Ester)' }, 0.6);
+                
+                group.add(c1, c2, c3, c4, c5, o1, o2);
+                group.add(createBond(c1.position, c2.position)); // Double bond
+                group.add(createBond(new THREE.Vector3(0.1, 0.1, 0), new THREE.Vector3(1.4, 0.1, 0)));
+                group.add(createBond(c2.position, c3.position));
+                group.add(createBond(c2.position, c4.position));
+                group.add(createBond(c4.position, o1.position));
+                group.add(createBond(c4.position, o2.position));
+                group.add(createBond(o2.position, c5.position));
+            }
+
+            function buildNylon(group) {
+                const data1 = { type: 'atom', monomerName: 'Hexamethylenediamine' };
+                const data2 = { type: 'atom', monomerName: 'Adipic Acid' };
+                
+                // Diamine (left)
+                let last_c = null;
+                for(let i=0; i<6; i++) {
+                    const c = createAtom(cpkColors.C, new THREE.Vector3(-10 + i * 1.5, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                    group.add(c);
+                    if (last_c) group.add(createBond(last_c.position, c.position));
+                    last_c = c;
+                }
+                const n1 = createAtom(cpkColors.N, new THREE.Vector3(-11.5, 1.5, 0), { ...data1, atomName: 'Nitrogen' }, 0.6);
+                const n2 = createAtom(cpkColors.N, new THREE.Vector3(-10 + 5 * 1.5 + 1.5, 1.5, 0), { ...data1, atomName: 'Nitrogen' }, 0.6);
+                group.add(n1, n2);
+                group.add(createBond(n1.position, new THREE.Vector3(-10, 0.5, 0)));
+                group.add(createBond(n2.position, last_c.position));
+
+                // Acid (right)
+                last_c = null;
+                for(let i=0; i<4; i++) {
+                    const c = createAtom(cpkColors.C, new THREE.Vector3(i * 1.5, -0.5, 0), { ...data2, atomName: 'Carbon' }, 0.6);
+                    group.add(c);
+                    if (last_c) group.add(createBond(last_c.position, c.position));
+                    last_c = c;
+                }
+                const c_cooh1 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, -1.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
+                const c_cooh2 = createAtom(cpkColors.C, new THREE.Vector3(3 * 1.5 + 1.5, -1.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
+                group.add(c_cooh1, c_cooh2);
+                group.add(createBond(c_cooh1.position, new THREE.Vector3(0, -0.5, 0)));
+                group.add(createBond(c_cooh2.position, last_c.position));
+                const o1 = createAtom(cpkColors.O, new THREE.Vector3(-1.5, -2.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const o2 = createAtom(cpkColors.O, new THREE.Vector3(-2.5, -1, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const o3 = createAtom(cpkColors.O, new THREE.Vector3(c_cooh2.position.x, -2.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                const o4 = createAtom(cpkColors.O, new THREE.Vector3(c_cooh2.position.x + 1, -1, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
+                group.add(o1, o2, o3, o4);
+                group.add(createBond(c_cooh1.position, o1.position));
+                group.add(createBond(c_cooh1.position, o2.position));
+                group.add(createBond(c_cooh2.position, o3.position));
+                group.add(createBond(c_cooh2.position, o4.position));
+            }
+            
+            function buildBunaS(group) {
+                const data1 = { type: 'atom', monomerName: '1,3-Butadiene' };
+                const data2 = { type: 'atom', monomerName: 'Styrene' };
+                
+                // Butadiene (left)
+                const b_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c3 = createAtom(cpkColors.C, new THREE.Vector3(-3, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c4 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                group.add(b_c1, b_c2, b_c3, b_c4);
+                group.add(createBond(b_c1.position, b_c2.position));
+                group.add(createBond(b_c2.position, b_c3.position));
+                group.add(createBond(b_c3.position, b_c4.position));
+                group.add(createBond(new THREE.Vector3(-5.9, 0.1, 0), new THREE.Vector3(-4.6, 0.1, 0))); // Double
+                group.add(createBond(new THREE.Vector3(-2.9, 0.1, 0), new THREE.Vector3(-1.6, 0.1, 0))); // Double
+                
+                // Styrene (right)
+                const s_c1 = createAtom(cpkColors.C, new THREE.Vector3(3, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
+                const s_c2 = createAtom(cpkColors.C, new THREE.Vector3(4.5, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
+                group.add(s_c1, s_c2);
+                group.add(createBond(s_c1.position, s_c2.position));
+                group.add(createBond(new THREE.Vector3(3.1, 0.1, 0), new THREE.Vector3(4.4, 0.1, 0))); // Double
+                // Benzene ring
+                const r_c1 = createAtom(cpkColors.C, new THREE.Vector3(5.5, 1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
+                group.add(r_c1);
+                group.add(createBond(s_c2.position, r_c1.position));
+            }
+
+            function buildBunaN(group) {
+                const data1 = { type: 'atom', monomerName: '1,3-Butadiene' };
+                const data2 = { type: 'atom', monomerName: 'Acrylonitrile' };
+
+                // Butadiene (left)
+                const b_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c3 = createAtom(cpkColors.C, new THREE.Vector3(-3, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                const b_c4 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
+                group.add(b_c1, b_c2, b_c3, b_c4);
+                group.add(createBond(b_c1.position, b_c2.position));
+                group.add(createBond(b_c2.position, b_c3.position));
+                group.add(createBond(b_c3.position, b_c4.position));
+                group.add(createBond(new THREE.Vector3(-5.9, 0.1, 0), new THREE.Vector3(-4.6, 0.1, 0))); // Double
+                group.add(createBond(new THREE.Vector3(-2.9, 0.1, 0), new THREE.Vector3(-1.6, 0.1, 0))); // Double
+
+                // Acrylonitrile (right)
+                const a_c1 = createAtom(cpkColors.C, new THREE.Vector3(2, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
+                const a_c2 = createAtom(cpkColors.C, new THREE.Vector3(3.5, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
+                const a_c3 = createAtom(cpkColors.C, new THREE.Vector3(5, 0, 0), { ...data2, atomName: 'Carbon (Nitrile)' }, 0.6);
+                const a_n1 = createAtom(cpkColors.N, new THREE.Vector3(6.5, 0, 0), { ...data2, atomName: 'Nitrogen' }, 0.6);
+                group.add(a_c1, a_c2, a_c3, a_n1);
+                group.add(createBond(a_c1.position, a_c2.position));
+                group.add(createBond(new THREE.Vector3(2.1, 0.1, 0), new THREE.Vector3(3.4, 0.1, 0))); // Double
+                group.add(createBond(a_c2.position, a_c3.position));
+                group.add(createBond(a_c3.position, a_n1.position)); // Triple bond
+                group.add(createBond(new THREE.Vector3(5.1, 0.1, 0), new THREE.Vector3(6.4, 0.1, 0)));
+                group.add(createBond(new THREE.Vector3(5.1, -0.1, 0), new THREE.Vector3(6.4, -0.1, 0)));
+            }
+
+
+            function drawPolymerModel(polymerType) {
+                if (!threeScene) init3D();
+                clear3DScene();
+                
+                switch(polymerType) {
+                    case 'pvc':
+                        buildPVC(threeScene.currentPolymerGroup);
+                        break;
+                    case 'pet':
+                        buildPET(threeScene.currentPolymerGroup);
+                        break;
+                    case 'pmma':
+                        buildPMMA(threeScene.currentPolymerGroup);
+                        break;
+                    case 'nylon':
+                        buildNylon(threeScene.currentPolymerGroup);
+                        break;
+                    case 'buna-s':
+                        buildBunaS(threeScene.currentPolymerGroup);
+                        break;
+                    case 'buna-n':
+                        buildBunaN(threeScene.currentPolymerGroup);
+                        break;
+                }
+                
+                // Center the new model
+                const boundingBox = new THREE.Box3().setFromObject(threeScene.currentPolymerGroup);
+                const center = new THREE.Vector3();
+                boundingBox.getCenter(center);
+                threeScene.currentPolymerGroup.position.sub(center);
+                threeScene.controls.reset();
+            }
+
+            function mount3DCanvas(polymerName) {
+                if (!threeScene) init3D();
+                const container = document.getElementById(`3d-container-${polymerName}`);
+                if (container && !container.contains(threeScene.renderer.domElement)) {
+                    container.innerHTML = '';
+                    container.appendChild(threeScene.renderer.domElement);
+                    
+                    const infoPanelHTML = `
+                        <div class="info-panel hidden">
+                            <button class="info-panel-close">&times;</button>
+                            <h4 class="info-panel-title"></h4>
+                            <p class="info-panel-content"></p>
+                        </div>`;
+                    container.insertAdjacentHTML('beforeend', infoPanelHTML);
+                    
+                    const rect = container.getBoundingClientRect();
+                    threeScene.renderer.setSize(rect.width, rect.height);
+                    threeScene.camera.aspect = rect.width / rect.height;
+                    threeScene.camera.updateProjectionMatrix();
+                }
+                drawPolymerModel(polymerName);
+                if (!animationFrameId) threeScene.animate();
+            }
+
+            mainNav.addEventListener('click', (e) => {
+                const targetButton = e.target.closest('.nav-button');
+                if (!targetButton) return;
+
+                const targetId = targetButton.dataset.target;
+                
+                navButtons.forEach(button => {
+                    button.classList.remove('active');
+                });
+                targetButton.classList.add('active');
+
+                contentSections.forEach(section => {
+                    if (section.id === 'content-' + targetId) {
+                        section.classList.remove('hidden');
+                        section.classList.add('animate-fadeIn');
+
+                        const h2 = section.querySelector('h2');
+                        const p = section.querySelector('p');
+                        if (h2) {
+                            if (!h2.dataset.originalText) h2.dataset.originalText = h2.innerText;
+                            typeWriter(h2, h2.dataset.originalText, 30);
+                        }
+                        if (p) {
+                            if (!p.dataset.originalText) p.dataset.originalText = p.innerText;
+                            typeWriter(p, p.dataset.originalText, 10);
+                        }
+
+                    } else {
+                        section.classList.add('hidden');
+                        section.classList.remove('animate-fadeIn');
+                    }
+                });
+
+                if (targetId !== 'intro') {
+                    const first3DTab = document.querySelector(`#content-${targetId} .sub-nav-button[data-target$="-3d"]`);
+                    const firstDetailsTab = document.querySelector(`#content-${targetId} .sub-nav-button[data-target$="-details"]`);
+                    const first3DContent = document.querySelector(`#content-${targetId} div[id$="-3d"]`);
+                    const firstDetailsContent = document.querySelector(`#content-${targetId} div[id$="-details"]`);
+                    
+                    if(first3DTab) {
+                        document.querySelectorAll(`#content-${targetId} .sub-nav-button`).forEach(btn => btn.classList.remove('active'));
+                        firstDetailsTab.classList.add('active');
+                        
+                        document.querySelectorAll(`#content-${targetId} .sub-content`).forEach(content => content.classList.add('hidden'));
+                        firstDetailsContent.classList.remove('hidden');
+                    }
+                    
+                    mount3DCanvas(targetId);
+                }
+            });
+
+            allSubNavs.forEach(nav => {
+                nav.addEventListener('click', (e) => {
+                    const targetButton = e.target.closest('.sub-nav-button');
+                    if (!targetButton) return;
+                    
+                    const targetId = targetButton.dataset.target;
+                    const parentSection = targetButton.closest('.content-section');
+                    
+                    parentSection.querySelectorAll('.sub-nav-button').forEach(button => {
+                        button.classList.remove('active');
+                    });
+                    targetButton.classList.add('active');
+
+                    parentSection.querySelectorAll('.sub-content').forEach(content => {
+                        if (content.id === targetId) {
+                            content.classList.remove('hidden');
+                            content.classList.add('animate-fadeIn');
+                        } else {
+                            content.classList.add('hidden');
+                            content.classList.remove('animate-fadeIn');
+                        }
+                    });
+
+                    if (targetId.endsWith('-3d')) {
+                        const polymerName = parentSection.id.split('-')[1];
+                        mount3DCanvas(polymerName);
+                    }
+                });
+            });
+            
+            document.body.addEventListener('click', (e) => {
+                if (e.target.classList.contains('info-panel-close')) {
+                    e.target.closest('.info-panel').classList.add('hidden');
+                    if (threeScene.lastHighlight) {
+                         threeScene.lastHighlight.material.emissive.setHex(threeScene.lastHighlight.currentHex);
+                         threeScene.lastHighlight = null;
+                    }
+                }
+            });
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (threeScene && entry.target.contains(threeScene.renderer.domElement)) {
+                        const rect = entry.contentRect;
+                        threeScene.renderer.setSize(rect.width, rect.height);
+                        threeScene.camera.aspect = rect.width / rect.height;
+                        threeScene.camera.updateProjectionMatrix();
+                    }
+                }
+            });
+
+            document.querySelectorAll('.three-d-container').forEach(container => {
+                resizeObserver.observe(container);
+            });
+            
+            mount3DCanvas('pvc');
+
+            const introSection = document.getElementById('content-intro');
+            const introH2 = introSection.querySelector('h2');
+            const introP = introSection.querySelector('p');
+            if (introH2) {
+                if (!introH2.dataset.originalText) introH2.dataset.originalText = introH2.innerText;
+                typeWriter(introH2, introH2.dataset.originalText, 30);
+            }
+            if (introP) {
+                if (!introP.dataset.originalText) introP.dataset.originalText = introP.innerText;
+                typeWriter(introP, introP.dataset.originalText, 10);
+            }
+
+        });
+    </script>
+</body>
+</html>
+
+
