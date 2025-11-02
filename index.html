@@ -6,8 +6,6 @@
     <title>Interactive Polymer Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -43,21 +41,9 @@
                 height: 350px;
             }
         }
-        .three-d-container {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            max-height: 50vh;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            background-color: #000000; 
-        }
-        .three-d-container canvas {
-            display: block;
-        }
         .nav-button.active {
-            background-color: #00FF00; 
-            color: #000000;
+            background-color: #00FF00;
+            color: #000000; 
             font-weight: 700;
         }
         .sub-nav-button.active {
@@ -145,51 +131,12 @@
             animation: blink-caret 0.75s step-end infinite;
             font-weight: bold;
         }
-        .info-panel {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            max-width: 250px;
-            background-color: rgba(0, 0, 0, 0.85);
-            border: 1px solid #00FF00;
-            border-radius: 0.25rem;
-            padding: 1rem;
-            color: #00FF00;
-            z-index: 100;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .info-panel.hidden {
-            display: none;
-        }
-        .info-panel-close {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: none;
-            border: none;
-            color: #00FF00;
-            font-size: 1.5rem;
-            font-weight: bold;
-            line-height: 1;
-            cursor: pointer;
-        }
-        .info-panel-close:hover {
-            color: #FFFFFF;
-        }
-        .info-panel-title {
-            color: #32ff32;
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-        .info-panel-content {
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body class="bg-black text-green-400 transition-colors duration-300">
 
     <div class="flex flex-col md:flex-row min-h-screen">
+
         <nav class="w-full md:w-64 bg-black md:fixed md:h-full shadow-lg z-10 border-r border-green-700 transition-colors duration-300">
             <div class="p-5 border-b border-green-700">
                 <h1 class="text-xl font-bold text-green-400">Polymer Explorer</h1>
@@ -207,7 +154,10 @@
             </ul>
         </nav>
 
+
         <main class="flex-1 md:ml-64 p-6 md:p-10">
+            
+
             <section id="content-intro" class="content-section max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-green-400 mb-4">Synthesis and Applications of Common Polymers</h2>
                 <p class="text-lg text-green-400 mb-8">
@@ -223,6 +173,8 @@
                     </div>
                 </div>
             </section>
+
+
             <section id="content-pvc" class="content-section hidden max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-green-400 mb-4">1. PVC (Polyvinyl Chloride)</h2>
                 <p class="text-lg text-green-400 mb-6">
@@ -254,15 +206,8 @@
 
                 <div id="pvc-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Vinyl Chloride</h3>
-                    <p class="text-green-400 mb-4">
-                        This is a 3D model of the <strong>Vinyl Chloride (CH<sub>2</sub>=CHCl)</strong> monomer, the building block of PVC. Click an atom to identify it. Model uses standard CPK coloring (C=Grey, H=White, Cl=Green).
-                    </p>
-                    <div id="3d-container-pvc" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
 
@@ -289,6 +234,7 @@
                     </ol>
                 </div>
             </section>
+
 
             <section id="content-pet" class="content-section hidden max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-green-400 mb-4">2. PET (Polyethylene Terephthalate)</h2>
@@ -324,15 +270,8 @@
 
                 <div id="pet-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: PET Monomers</h3>
-                    <p class="text-green-400 mb-4">
-                        This model shows the two PET monomers: <strong>Ethylene Glycol</strong> (left) and <strong>Terephthalic Acid</strong> (right). They join via condensation. CPK Colors: C=Grey, H=White, O=Red.
-                    </p>
-                    <div id="3d-container-pet" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
                 
@@ -359,6 +298,7 @@
                 </div>
             </section>
             
+          
             <section id="content-pmma" class="content-section hidden max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-green-400 mb-4">3. PMMA (Polymethyl Methacrylate)</h2>
                 <p class="text-lg text-green-400 mb-6">
@@ -390,15 +330,8 @@
                 
                 <div id="pmma-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Methyl Methacrylate</h3>
-                    <p class="text-green-400 mb-4">
-                        This is a 3D model of the <strong>Methyl Methacrylate</strong> monomer. Click an atom to identify it. CPK Colors: C=Grey, H=White, O=Red.
-                    </p>
-                    <div id="3d-container-pmma" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
 
@@ -460,15 +393,8 @@
                 
                 <div id="nylon-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Nylon 6,6 Monomers</h3>
-                    <p class="text-green-400 mb-4">
-                        This model shows <strong>Hexamethylenediamine</strong> (left) and <strong>Adipic Acid</strong> (right). They join to form Nylon 6,6. CPK Colors: C=Grey, H=White, O=Red, N=Blue.
-                    </p>
-                    <div id="3d-container-nylon" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
 
@@ -530,15 +456,8 @@
                 
                 <div id="buna-s-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Buna-S Monomers</h3>
-                    <p class="text-green-400 mb-4">
-                        This model shows <strong>1,3-Butadiene</strong> (left) and <strong>Styrene</strong> (right), which randomly copolymerize to form Buna-S. CPK Colors: C=Grey, H=White.
-                    </p>
-                    <div id="3d-container-buna-s" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
 
@@ -567,7 +486,6 @@
                 </div>
             </section>
             
-
             <section id="content-buna-n" class="content-section hidden max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-green-400 mb-4">6. Buna-N (Nitrile-Butadiene Rubber - NBR)</h2>
                 <p class="text-lg text-green-400 mb-6">
@@ -602,15 +520,8 @@
                 
                 <div id="buna-n-3d" class="sub-content hidden bg-gray-900 p-6 rounded-lg shadow-md border border-green-700">
                     <h3 class="text-xl font-semibold text-green-300 mb-4">Interactive 3D Model: Buna-N Monomers</h3>
-                    <p class="text-green-400 mb-4">
-                        This model shows <strong>1,3-Butadiene</strong> (left) and <strong>Acrylonitrile</strong> (right), which randomly copolymerize. CPK Colors: C=Grey, H=White, N=Blue.
-                    </p>
-                    <div id="3d-container-buna-n" class="three-d-container">
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>
+                    <div class="h-64 flex items-center justify-center bg-gray-900 border-2 border-dashed border-green-700 rounded-lg">
+                        <span class="text-3xl font-bold text-green-600 animate-pulse">COMING SOON...</span>
                     </div>
                 </div>
 
@@ -753,371 +664,6 @@
             
             createChart();
 
-            let threeScene = null;
-            let currentPolymerGroup = null;
-            let animationFrameId = null;
-            let raycaster, mouse;
-
-            const cpkColors = {
-                C:  0x282828, // Dark Grey
-                H:  0xFFFFFF, // White
-                O:  0xFF0000, // Red
-                N:  0x0000FF, // Blue
-                Cl: 0x00FF00  // Green
-            };
-
-            function init3D() {
-                if (threeScene) return;
-
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                camera.position.z = 15;
-                
-                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                renderer.setPixelRatio(window.devicePixelRatio);
-                renderer.setClearColor(0x000000, 0);
-
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-                scene.add(ambientLight);
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(5, 10, 7.5);
-                scene.add(directionalLight);
-                
-                const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.screenSpacePannable = false;
-                controls.minDistance = 5;
-                controls.maxDistance = 30;
-                controls.autoRotate = true;
-                controls.autoRotateSpeed = 1.0;
-
-                currentPolymerGroup = new THREE.Group();
-                scene.add(currentPolymerGroup);
-
-                raycaster = new THREE.Raycaster();
-                mouse = new THREE.Vector2();
-                
-                renderer.domElement.addEventListener('click', onCanvasClick, false);
-
-                threeScene = { scene, camera, renderer, controls, currentPolymerGroup, lastHighlight: null };
-
-                function animate() {
-                    animationFrameId = requestAnimationFrame(animate);
-                    controls.update();
-                    renderer.render(scene, camera);
-                }
-                animate();
-            }
-            
-            function onCanvasClick(event) {
-                const canvas = event.target;
-                const rect = canvas.getBoundingClientRect();
-                
-                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-                
-                raycaster.setFromCamera(mouse, threeScene.camera);
-                
-                const intersects = raycaster.intersectObjects(currentPolymerGroup.children, true);
-                
-                const infoPanel = canvas.closest('.three-d-container').querySelector('.info-panel');
-                
-                if (threeScene.lastHighlight) {
-                    threeScene.lastHighlight.material.emissive.setHex(threeScene.lastHighlight.currentHex);
-                    threeScene.lastHighlight = null;
-                }
-
-                if (intersects.length > 0) {
-                    const intersectedObject = intersects[0].object;
-                    const userData = intersectedObject.userData;
-                    
-                    if (userData && userData.type === 'atom') {
-                        infoPanel.querySelector('.info-panel-title').textContent = `ATOM_ID:: ${userData.atomName}`;
-                        infoPanel.querySelector('.info-panel-content').textContent = `Part of: ${userData.monomerName}`;
-                        infoPanel.classList.remove('hidden');
-                        
-                        threeScene.lastHighlight = intersectedObject;
-                        threeScene.lastHighlight.currentHex = intersectedObject.material.emissive.getHex();
-                        intersectedObject.material.emissive.setHex(0xAAAAAA);
-                        
-                    } else {
-                        infoPanel.classList.add('hidden');
-                    }
-                } else {
-                    infoPanel.classList.add('hidden');
-                }
-            }
-
-            function clear3DScene() {
-                if (!threeScene || !currentPolymerGroup) return;
-                while (currentPolymerGroup.children.length > 0) {
-                    const obj = currentPolymerGroup.children[0];
-                    currentPolymerGroup.remove(obj);
-                    if (obj.geometry) obj.geometry.dispose();
-                    if (obj.material) obj.material.dispose();
-                }
-                threeScene.lastHighlight = null;
-            }
-            
-            function createAtom(color, posVec, userData, radius = 0.5) {
-                const geometry = new THREE.SphereGeometry(radius, 16, 16);
-                const material = new THREE.MeshPhongMaterial({ color: color });
-                const atom = new THREE.Mesh(geometry, material);
-                atom.position.copy(posVec);
-                atom.userData = userData;
-                return atom;
-            }
-
-            function createBond(v1, v2) {
-                const path = new THREE.LineCurve3(v1, v2);
-                const geometry = new THREE.TubeGeometry(path, 1, 0.1, 8, false);
-                const material = new THREE.MeshPhongMaterial({ color: 0x555555 }); // Grey bonds
-                const bond = new THREE.Mesh(geometry, material);
-                bond.userData = { type: 'bond' };
-                return bond;
-            }
-
-            function buildPVC(group) {
-                const data = { type: 'atom', monomerName: 'Vinyl Chloride' };
-                const c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
-                const c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
-                const h1 = createAtom(cpkColors.H, new THREE.Vector3(-0.5, 1, 0), { ...data, atomName: 'Hydrogen' });
-                const h2 = createAtom(cpkColors.H, new THREE.Vector3(-0.5, -1, 0), { ...data, atomName: 'Hydrogen' });
-                const h3 = createAtom(cpkColors.H, new THREE.Vector3(2, 1, 0), { ...data, atomName: 'Hydrogen' });
-                const cl = createAtom(cpkColors.Cl, new THREE.Vector3(2, -1, 0), { ...data, atomName: 'Chlorine' }, 0.7);
-                
-                group.add(c1, c2, h1, h2, h3, cl);
-                group.add(createBond(c1.position, c2.position)); // Double bond
-                group.add(createBond(new THREE.Vector3(0.1, 0.1, 0), new THREE.Vector3(1.4, 0.1, 0)));
-                group.add(createBond(c1.position, h1.position));
-                group.add(createBond(c1.position, h2.position));
-                group.add(createBond(c2.position, h3.position));
-                group.add(createBond(c2.position, cl.position));
-            }
-
-            function buildPET(group) {
-                const data1 = { type: 'atom', monomerName: 'Ethylene Glycol' };
-                const data2 = { type: 'atom', monomerName: 'Terephthalic Acid' };
-
-                // Ethylene Glycol (left)
-                const eg_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const eg_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const eg_o1 = createAtom(cpkColors.O, new THREE.Vector3(-7, 1.5, 0), { ...data1, atomName: 'Oxygen' }, 0.6);
-                const eg_o2 = createAtom(cpkColors.O, new THREE.Vector3(-3.5, 1.5, 0), { ...data1, atomName: 'Oxygen' }, 0.6);
-                group.add(eg_c1, eg_c2, eg_o1, eg_o2);
-                group.add(createBond(eg_c1.position, eg_c2.position));
-                group.add(createBond(eg_c1.position, eg_o1.position));
-                group.add(createBond(eg_c2.position, eg_o2.position));
-
-                // Terephthalic Acid (right) - simplified benzene ring
-                const ta_c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                const ta_c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 1, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                const ta_c3 = createAtom(cpkColors.C, new THREE.Vector3(3, 0, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                const ta_c4 = createAtom(cpkColors.C, new THREE.Vector3(3, -1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                const ta_c5 = createAtom(cpkColors.C, new THREE.Vector3(1.5, -2.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                const ta_c6 = createAtom(cpkColors.C, new THREE.Vector3(0, -1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                group.add(ta_c1, ta_c2, ta_c3, ta_c4, ta_c5, ta_c6);
-                group.add(createBond(ta_c1.position, ta_c2.position));
-                group.add(createBond(ta_c2.position, ta_c3.position));
-                group.add(createBond(ta_c3.position, ta_c4.position));
-                group.add(createBond(ta_c4.position, ta_c5.position));
-                group.add(createBond(ta_c5.position, ta_c6.position));
-                group.add(createBond(ta_c6.position, ta_c1.position));
-                // Carboxyl groups
-                const ta_c7 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 1, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
-                const ta_c8 = createAtom(cpkColors.C, new THREE.Vector3(4.5, -2.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
-                const ta_o1 = createAtom(cpkColors.O, new THREE.Vector3(-1.5, 2, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const ta_o2 = createAtom(cpkColors.O, new THREE.Vector3(-2.5, 0, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const ta_o3 = createAtom(cpkColors.O, new THREE.Vector3(4.5, -3.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const ta_o4 = createAtom(cpkColors.O, new THREE.Vector3(5.5, -1.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                group.add(ta_c7, ta_c8, ta_o1, ta_o2, ta_o3, ta_o4);
-                group.add(createBond(ta_c1.position, ta_c7.position));
-                group.add(createBond(ta_c5.position, ta_c8.position));
-                group.add(createBond(ta_c7.position, ta_o1.position));
-                group.add(createBond(ta_c7.position, ta_o2.position));
-                group.add(createBond(ta_c8.position, ta_o3.position));
-                group.add(createBond(ta_c8.position, ta_o4.position));
-            }
-
-            function buildPMMA(group) {
-                const data = { type: 'atom', monomerName: 'Methyl Methacrylate' };
-                const c1 = createAtom(cpkColors.C, new THREE.Vector3(0, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
-                const c2 = createAtom(cpkColors.C, new THREE.Vector3(1.5, 0, 0), { ...data, atomName: 'Carbon' }, 0.6);
-                const c3 = createAtom(cpkColors.C, new THREE.Vector3(1.5, -1.5, 0), { ...data, atomName: 'Carbon (Methyl)' }, 0.6);
-                const c4 = createAtom(cpkColors.C, new THREE.Vector3(3, 0.5, 0), { ...data, atomName: 'Carbon (Ester)' }, 0.6);
-                const c5 = createAtom(cpkColors.C, new THREE.Vector3(5, 0.5, 0), { ...data, atomName: 'Carbon (Ester Methyl)' }, 0.6);
-                const o1 = createAtom(cpkColors.O, new THREE.Vector3(3, 1.5, 0), { ...data, atomName: 'Oxygen (Ester)' }, 0.6);
-                const o2 = createAtom(cpkColors.O, new THREE.Vector3(4, -0.5, 0), { ...data, atomName: 'Oxygen (Ester)' }, 0.6);
-                
-                group.add(c1, c2, c3, c4, c5, o1, o2);
-                group.add(createBond(c1.position, c2.position)); // Double bond
-                group.add(createBond(new THREE.Vector3(0.1, 0.1, 0), new THREE.Vector3(1.4, 0.1, 0)));
-                group.add(createBond(c2.position, c3.position));
-                group.add(createBond(c2.position, c4.position));
-                group.add(createBond(c4.position, o1.position));
-                group.add(createBond(c4.position, o2.position));
-                group.add(createBond(o2.position, c5.position));
-            }
-
-            function buildNylon(group) {
-                const data1 = { type: 'atom', monomerName: 'Hexamethylenediamine' };
-                const data2 = { type: 'atom', monomerName: 'Adipic Acid' };
-                
-                // Diamine (left)
-                let last_c = null;
-                for(let i=0; i<6; i++) {
-                    const c = createAtom(cpkColors.C, new THREE.Vector3(-10 + i * 1.5, 0.5, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                    group.add(c);
-                    if (last_c) group.add(createBond(last_c.position, c.position));
-                    last_c = c;
-                }
-                const n1 = createAtom(cpkColors.N, new THREE.Vector3(-11.5, 1.5, 0), { ...data1, atomName: 'Nitrogen' }, 0.6);
-                const n2 = createAtom(cpkColors.N, new THREE.Vector3(-10 + 5 * 1.5 + 1.5, 1.5, 0), { ...data1, atomName: 'Nitrogen' }, 0.6);
-                group.add(n1, n2);
-                group.add(createBond(n1.position, new THREE.Vector3(-10, 0.5, 0)));
-                group.add(createBond(n2.position, last_c.position));
-
-                // Acid (right)
-                last_c = null;
-                for(let i=0; i<4; i++) {
-                    const c = createAtom(cpkColors.C, new THREE.Vector3(i * 1.5, -0.5, 0), { ...data2, atomName: 'Carbon' }, 0.6);
-                    group.add(c);
-                    if (last_c) group.add(createBond(last_c.position, c.position));
-                    last_c = c;
-                }
-                const c_cooh1 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, -1.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
-                const c_cooh2 = createAtom(cpkColors.C, new THREE.Vector3(3 * 1.5 + 1.5, -1.5, 0), { ...data2, atomName: 'Carbon (Carboxyl)' }, 0.6);
-                group.add(c_cooh1, c_cooh2);
-                group.add(createBond(c_cooh1.position, new THREE.Vector3(0, -0.5, 0)));
-                group.add(createBond(c_cooh2.position, last_c.position));
-                const o1 = createAtom(cpkColors.O, new THREE.Vector3(-1.5, -2.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const o2 = createAtom(cpkColors.O, new THREE.Vector3(-2.5, -1, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const o3 = createAtom(cpkColors.O, new THREE.Vector3(c_cooh2.position.x, -2.5, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                const o4 = createAtom(cpkColors.O, new THREE.Vector3(c_cooh2.position.x + 1, -1, 0), { ...data2, atomName: 'Oxygen' }, 0.6);
-                group.add(o1, o2, o3, o4);
-                group.add(createBond(c_cooh1.position, o1.position));
-                group.add(createBond(c_cooh1.position, o2.position));
-                group.add(createBond(c_cooh2.position, o3.position));
-                group.add(createBond(c_cooh2.position, o4.position));
-            }
-            
-            function buildBunaS(group) {
-                const data1 = { type: 'atom', monomerName: '1,3-Butadiene' };
-                const data2 = { type: 'atom', monomerName: 'Styrene' };
-                
-                // Butadiene (left)
-                const b_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c3 = createAtom(cpkColors.C, new THREE.Vector3(-3, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c4 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                group.add(b_c1, b_c2, b_c3, b_c4);
-                group.add(createBond(b_c1.position, b_c2.position));
-                group.add(createBond(b_c2.position, b_c3.position));
-                group.add(createBond(b_c3.position, b_c4.position));
-                group.add(createBond(new THREE.Vector3(-5.9, 0.1, 0), new THREE.Vector3(-4.6, 0.1, 0))); // Double
-                group.add(createBond(new THREE.Vector3(-2.9, 0.1, 0), new THREE.Vector3(-1.6, 0.1, 0))); // Double
-                
-                // Styrene (right)
-                const s_c1 = createAtom(cpkColors.C, new THREE.Vector3(3, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
-                const s_c2 = createAtom(cpkColors.C, new THREE.Vector3(4.5, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
-                group.add(s_c1, s_c2);
-                group.add(createBond(s_c1.position, s_c2.position));
-                group.add(createBond(new THREE.Vector3(3.1, 0.1, 0), new THREE.Vector3(4.4, 0.1, 0))); // Double
-                // Benzene ring
-                const r_c1 = createAtom(cpkColors.C, new THREE.Vector3(5.5, 1.5, 0), { ...data2, atomName: 'Carbon (Ring)' }, 0.6);
-                group.add(r_c1);
-                group.add(createBond(s_c2.position, r_c1.position));
-            }
-
-            function buildBunaN(group) {
-                const data1 = { type: 'atom', monomerName: '1,3-Butadiene' };
-                const data2 = { type: 'atom', monomerName: 'Acrylonitrile' };
-
-                // Butadiene (left)
-                const b_c1 = createAtom(cpkColors.C, new THREE.Vector3(-6, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c2 = createAtom(cpkColors.C, new THREE.Vector3(-4.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c3 = createAtom(cpkColors.C, new THREE.Vector3(-3, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                const b_c4 = createAtom(cpkColors.C, new THREE.Vector3(-1.5, 0, 0), { ...data1, atomName: 'Carbon' }, 0.6);
-                group.add(b_c1, b_c2, b_c3, b_c4);
-                group.add(createBond(b_c1.position, b_c2.position));
-                group.add(createBond(b_c2.position, b_c3.position));
-                group.add(createBond(b_c3.position, b_c4.position));
-                group.add(createBond(new THREE.Vector3(-5.9, 0.1, 0), new THREE.Vector3(-4.6, 0.1, 0))); // Double
-                group.add(createBond(new THREE.Vector3(-2.9, 0.1, 0), new THREE.Vector3(-1.6, 0.1, 0))); // Double
-
-                // Acrylonitrile (right)
-                const a_c1 = createAtom(cpkColors.C, new THREE.Vector3(2, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
-                const a_c2 = createAtom(cpkColors.C, new THREE.Vector3(3.5, 0, 0), { ...data2, atomName: 'Carbon' }, 0.6);
-                const a_c3 = createAtom(cpkColors.C, new THREE.Vector3(5, 0, 0), { ...data2, atomName: 'Carbon (Nitrile)' }, 0.6);
-                const a_n1 = createAtom(cpkColors.N, new THREE.Vector3(6.5, 0, 0), { ...data2, atomName: 'Nitrogen' }, 0.6);
-                group.add(a_c1, a_c2, a_c3, a_n1);
-                group.add(createBond(a_c1.position, a_c2.position));
-                group.add(createBond(new THREE.Vector3(2.1, 0.1, 0), new THREE.Vector3(3.4, 0.1, 0))); // Double
-                group.add(createBond(a_c2.position, a_c3.position));
-                group.add(createBond(a_c3.position, a_n1.position)); // Triple bond
-                group.add(createBond(new THREE.Vector3(5.1, 0.1, 0), new THREE.Vector3(6.4, 0.1, 0)));
-                group.add(createBond(new THREE.Vector3(5.1, -0.1, 0), new THREE.Vector3(6.4, -0.1, 0)));
-            }
-
-
-            function drawPolymerModel(polymerType) {
-                if (!threeScene) init3D();
-                clear3DScene();
-                
-                switch(polymerType) {
-                    case 'pvc':
-                        buildPVC(threeScene.currentPolymerGroup);
-                        break;
-                    case 'pet':
-                        buildPET(threeScene.currentPolymerGroup);
-                        break;
-                    case 'pmma':
-                        buildPMMA(threeScene.currentPolymerGroup);
-                        break;
-                    case 'nylon':
-                        buildNylon(threeScene.currentPolymerGroup);
-                        break;
-                    case 'buna-s':
-                        buildBunaS(threeScene.currentPolymerGroup);
-                        break;
-                    case 'buna-n':
-                        buildBunaN(threeScene.currentPolymerGroup);
-                        break;
-                }
-                
-                // Center the new model
-                const boundingBox = new THREE.Box3().setFromObject(threeScene.currentPolymerGroup);
-                const center = new THREE.Vector3();
-                boundingBox.getCenter(center);
-                threeScene.currentPolymerGroup.position.sub(center);
-                threeScene.controls.reset();
-            }
-
-            function mount3DCanvas(polymerName) {
-                if (!threeScene) init3D();
-                const container = document.getElementById(`3d-container-${polymerName}`);
-                if (container && !container.contains(threeScene.renderer.domElement)) {
-                    container.innerHTML = '';
-                    container.appendChild(threeScene.renderer.domElement);
-                    
-                    const infoPanelHTML = `
-                        <div class="info-panel hidden">
-                            <button class="info-panel-close">&times;</button>
-                            <h4 class="info-panel-title"></h4>
-                            <p class="info-panel-content"></p>
-                        </div>`;
-                    container.insertAdjacentHTML('beforeend', infoPanelHTML);
-                    
-                    const rect = container.getBoundingClientRect();
-                    threeScene.renderer.setSize(rect.width, rect.height);
-                    threeScene.camera.aspect = rect.width / rect.height;
-                    threeScene.camera.updateProjectionMatrix();
-                }
-                drawPolymerModel(polymerName);
-                if (!animationFrameId) threeScene.animate();
-            }
-
             mainNav.addEventListener('click', (e) => {
                 const targetButton = e.target.closest('.nav-button');
                 if (!targetButton) return;
@@ -1165,7 +711,6 @@
                         firstDetailsContent.classList.remove('hidden');
                     }
                     
-                    mount3DCanvas(targetId);
                 }
             });
 
@@ -1193,8 +738,6 @@
                     });
 
                     if (targetId.endsWith('-3d')) {
-                        const polymerName = parentSection.id.split('-')[1];
-                        mount3DCanvas(polymerName);
                     }
                 });
             });
@@ -1224,8 +767,6 @@
                 resizeObserver.observe(container);
             });
             
-            mount3DCanvas('pvc');
-
             const introSection = document.getElementById('content-intro');
             const introH2 = introSection.querySelector('h2');
             const introP = introSection.querySelector('p');
@@ -1242,5 +783,6 @@
     </script>
 </body>
 </html>
+
 
 
